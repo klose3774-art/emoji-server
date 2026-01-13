@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tareas Guardadas</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f0f0; margin: 0; padding: 2rem; }
+        .container { max-width: 800px; margin: auto; background-color: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        ul { list-style: none; padding: 0; }
+        li { background: #f9f9f9; border: 1px solid #ddd; margin-bottom: 1rem; padding: 1rem; border-radius: 4px; }
+        .meta { font-size: 0.8rem; color: #666; }
+        .actions { margin-top: 0.5rem; }
+        button { margin-right: 0.5rem; padding: 0.3rem 0.6rem; cursor: pointer; }
+        .btn-edit { background: #ffc107; border: none; }
+        .btn-delete { background: #dc3545; color: white; border: none; }
+        .btn-toggle { background: #198754; color: white; border: none; }
+        .nav { display: flex; justify-content: space-between; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Lista de Tareas</h1>
+    <ul id="taskList"></ul>
+
+    <div class="nav">
+        <button id="backBtn">Regresar</button>
+        <button id="logoutBtn">Cerrar sesión</button>
+    </div>
+</div>
+
+<script>
+const taskList = document.getElementById('taskList');
+
+async function fetchTasks() {
+    const res = await fetch('/messages', { credentials: 'include' });
+    if (res.status === 401) return location.href = '/';
+    const tasks = await res.json();
+    renderTasks(tasks);
+}
+
+function renderTasks(tasks) {
+    taskList.innerHTML = '';
+    tasks.forEach(t => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <strong>${t.title}</strong>
+            <div class="meta">
+                Estado: ${t.completed ? 'Completada' : 'Pendiente'} |
+                ID: ${t.id} |
+                Creada: ${new Date(t.createdAt).toLocaleString('es-PE')}
+            </div>
+            <div class="actions">
+                <button class="btn-toggle" onclick="toggleTask(${t.id}, ${!t.completed})">
+                    ${t.completed ? 'Marcar pendiente' : 'Completar'}
+                </button>
+                <button class="btn-edit" onclick="editTask(${t.id}, '${t.title}')">Editar</button>
+                <button class="btn-delete" onclick="deleteTask(${t.id})">Borrar</button>
+            </div>
+        `;
+        taskList.appendChild(li);
+    });
+}
+
+async function toggleTask(id, completed) {
+    await fetch(`/messages/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ completed })
+    });
+    fetchTasks();
+}
+
+function editTask(id, currentTitle) {
+    const title = prompt('Editar tarea:', currentTitle);
+    if (!title) return;
+    fetch(`/messages/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title })
+    }).then(fetchTasks);
+}
+
+async function deleteTask(id) {
+    if (!confirm('¿Eliminar tarea?')) return;
+    await fetch(`/messages/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    });
+    fetchTasks();
+}
+
+document.getElementById('backBtn').onclick = () => location.href = '/';
+document.getElementById('logoutBtn').onclick = async () => {
+    await fetch('/logout', { method: 'POST', credentials: 'include' });
+    location.href = '/';
+};
+
+fetchTasks();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "title": "mi tarea",
+    "completed": true,
+    "createdAt": "2026-01-13T20:44:00.297Z",
+    "updatedAt": "2026-01-13T20:44:08.750Z"
+  }
+]
